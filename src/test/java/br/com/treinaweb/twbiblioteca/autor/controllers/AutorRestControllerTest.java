@@ -14,6 +14,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import br.com.treinaweb.twbiblioteca.autor.builders.AutorRequestBuilder;
 import br.com.treinaweb.twbiblioteca.autor.builders.AutorResponseBuilder;
 import br.com.treinaweb.twbiblioteca.autor.exceptions.AutorNaoEncontradoException;
 import br.com.treinaweb.twbiblioteca.autor.services.AutorService;
@@ -26,6 +29,9 @@ public class AutorRestControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private static final String AUTOR_API_URL_PATH = "/api/v1/autores";
 
@@ -85,7 +91,32 @@ public class AutorRestControllerTest {
         doThrow(AutorNaoEncontradoException.class).when(service).excluirPorId(id);
 
         mockMvc.perform(delete(AUTOR_API_URL_PATH + "/" + id).contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void quandoPOSTCadastrarComDadosValidosDeveRetornarAutorComStatusCode201() throws Exception {
+        var requestBody = AutorRequestBuilder.builder().build();
+        var responseBody = AutorResponseBuilder.builder().build();
+        var json = objectMapper.writeValueAsString(requestBody);
+
+        when(service.cadastrar(requestBody)).thenReturn(responseBody);
+
+        mockMvc.perform(post(AUTOR_API_URL_PATH).contentType(MediaType.APPLICATION_JSON).content(json))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id", is(responseBody.getId().intValue())))
+            .andExpect(jsonPath("$.nome", is(responseBody.getNome())))
+            .andExpect(jsonPath("$.dataNascimento", is(responseBody.getDataNascimento().toString())))
+            .andExpect(jsonPath("$.dataFalecimento", is(responseBody.getDataFalecimento().toString())));
+    }
+
+    @Test
+    void quandoPOSTCadastrarComDadosInvalidosDeveRetornarAutorComStatusCode400() throws Exception {
+        var requestBody = AutorRequestBuilder.builder().nome("").build();
+        var json = objectMapper.writeValueAsString(requestBody);
+        
+        mockMvc.perform(post(AUTOR_API_URL_PATH).contentType(MediaType.APPLICATION_JSON).content(json))
+            .andExpect(status().isBadRequest());
     }
 
 }
