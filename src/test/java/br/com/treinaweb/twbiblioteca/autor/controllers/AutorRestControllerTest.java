@@ -1,10 +1,9 @@
 package br.com.treinaweb.twbiblioteca.autor.controllers;
 
-import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.util.List;
 
@@ -67,6 +66,26 @@ public class AutorRestControllerTest {
 
         mockMvc.perform(get(AUTOR_API_URL_PATH + "/" + id).contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void quandoDELETEExcluirPorIdComIdValidoDeveRetornarStatusCode204() throws Exception {
+        var id = 1L;
+        
+        doNothing().when(service).excluirPorId(id);
+
+        mockMvc.perform(delete(AUTOR_API_URL_PATH + "/" + id).contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNoContent()); 
+    }
+
+    @Test
+    void quandoDELETEExcluirPorIdComIdInvalidoDeveRetornarStatusCode404() throws Exception {
+        var id = 1L;
+
+        doThrow(AutorNaoEncontradoException.class).when(service).excluirPorId(id);
+
+        mockMvc.perform(delete(AUTOR_API_URL_PATH + "/" + id).contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isNotFound());
     }
 
 }
